@@ -8,7 +8,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "test:artillery": "artillery run -t $API_URL test/artillery/items-crud.yml"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.152",
@@ -19,7 +20,8 @@
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "~5.6.3"
+    "typescript": "~5.6.3",
+    "artillery": "^2.0.0"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.873.0",

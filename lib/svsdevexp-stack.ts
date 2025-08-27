@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import  {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs';
 import path from 'path';
 import { Duration } from 'aws-cdk-lib';
@@ -60,6 +61,17 @@ export class SvsdevexpStack extends cdk.Stack {
       entry: path.join(__dirname, '../src/items/adapters/in/lambda-handlers/update.ts'),
       ...commonFnProps,
     });
+
+    const secretsManagerPolicyStatement = new iam.PolicyStatement({
+      actions: ['secretsmanager:GetSecretValue'],
+      resources: ['*'],
+    });
+
+    getItemLambda.addToRolePolicy(secretsManagerPolicyStatement);
+    createItemLambda.addToRolePolicy(secretsManagerPolicyStatement);
+    deleteItemLambda.addToRolePolicy(secretsManagerPolicyStatement);
+    listItemsLambda.addToRolePolicy(secretsManagerPolicyStatement);
+    updateItemLambda.addToRolePolicy(secretsManagerPolicyStatement);
 
     table.grantReadWriteData(getItemLambda);
     table.grantReadWriteData(createItemLambda);

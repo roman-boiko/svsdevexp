@@ -1,0 +1,55 @@
+config:
+  target: "{{ $env.API_URL }}"
+  phases:
+    - name: smoke
+      duration: 60
+      arrivalCount: 10
+  defaults:
+    headers:
+      content-type: application/json
+  processor: ./processors/items.js
+
+scenarios:
+  - name: Items CRUD
+    flow:
+      - function: generateItem
+      - post:
+          url: "/items"
+          json:
+            id: "{{ id }}"
+            name: "{{ name }}"
+            price: {{ price }}
+          expect:
+            - statusCode: 201
+
+      - get:
+          url: "/items/{{ id }}"
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/items"
+          expect:
+            - statusCode: 200
+
+      - function: mutateItem
+      - put:
+          url: "/items/{{ id }}"
+          json:
+            id: "{{ id }}"
+            name: "{{ name }}"
+            price: {{ price }}
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/items/{{ id }}"
+          expect:
+            - statusCode: 200
+
+      - delete:
+          url: "/items/{{ id }}"
+          expect:
+            - statusCode: 204
+
+

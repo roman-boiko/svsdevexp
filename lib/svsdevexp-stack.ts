@@ -6,11 +6,22 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import  {NodejsFunction} from 'aws-cdk-lib/aws-lambda-nodejs';
 import path from 'path';
 import { Duration } from 'aws-cdk-lib';
+import { DatadogLambda } from "datadog-cdk-constructs-v2";
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class SvsdevexpStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const datadogLambda = new DatadogLambda(this, "DatadogLambda", {
+      nodeLayerVersion: 127,
+      extensionLayerVersion: 84,
+      site: "datadoghq.com",
+      apiKeySecretArn: "arn:aws:secretsmanager:us-east-1:770341584863:secret:rb/lambda/monitoring/key-CfqEO5",
+      service: "svsdevexp",
+      env: "prod",
+      version: "1.0.0"
+  });
 
     const table = new dynamodb.Table(this, 'ItemsTable', {
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
@@ -19,6 +30,7 @@ export class SvsdevexpStack extends cdk.Stack {
     const commonFnProps = {
       handler: 'handler',
       runtime: lambda.Runtime.NODEJS_22_X,
+      architecture: lambda.Architecture.ARM_64,
       memorySize: 256,
       timeout: Duration.seconds(10),
       environment: { TABLE_NAME: table.tableName },
@@ -55,16 +67,21 @@ export class SvsdevexpStack extends cdk.Stack {
     table.grantReadWriteData(listItemsLambda);
     table.grantReadWriteData(updateItemLambda);
 
+    datadogLambda.addLambdaFunctions([getItemLambda, createItemLambda, deleteItemLambda, listItemsLambda, updateItemLambda]);
+
     const api = new apigw.RestApi(this, 'ItemsApi', {
       restApiName: 'ItemsApi',
     });
 
     const itemsResource = api.root.addResource('items');
-    itemsResource.addMethod('GET', new apigw.LambdaIntegration(getItemLambda));
+    const itemResource = itemsResource.addResource('{id}');
+    itemResource.addMethod('GET', new apigw.LambdaIntegration(getItemLambda));
+    itemResource.addMethod('DELETE', new apigw.LambdaIntegration(deleteItemLambda));
+    itemResource.addMethod('PUT', new apigw.LambdaIntegration(updateItemLambda));
+
     itemsResource.addMethod('POST', new apigw.LambdaIntegration(createItemLambda));
-    itemsResource.addMethod('DELETE', new apigw.LambdaIntegration(deleteItemLambda));
     itemsResource.addMethod('GET', new apigw.LambdaIntegration(listItemsLambda));
-    itemsResource.addMethod('PUT', new apigw.LambdaIntegration(updateItemLambda));
+
 
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: api.url,

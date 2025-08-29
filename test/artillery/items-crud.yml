@@ -1,9 +1,12 @@
 config:
   target: "{{ $env.API_URL }}"
   phases:
-    - name: smoke
-      duration: 60
+    - name: loadtest
+      duration: 600
       arrivalCount: 10
+      arrivalRate: 10
+      rampTo: 100
+      rampUp: 10
   defaults:
     headers:
       content-type: application/json

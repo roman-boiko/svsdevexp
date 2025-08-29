@@ -38,7 +38,10 @@ export class DynamodbItemRepository implements ItemRepository {
         const cmd = new UpdateCommand({
             TableName: this.tableName,
             Key: { id },
-            UpdateExpression: "set name = :name, price = :price",
+            UpdateExpression: "set #name = :name, price = :price",
+            ExpressionAttributeNames: {
+                "#name": "name",
+            },
             ExpressionAttributeValues: {
                 ":name": item.name,
                 ":price": item.price,

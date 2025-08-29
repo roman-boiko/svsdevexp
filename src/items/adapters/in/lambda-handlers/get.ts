@@ -3,6 +3,7 @@ import { getItem } from "../../../context";
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const id = event.pathParameters?.id;
+    console.log(id);
     if (!id) {
         return { statusCode: 400, body: JSON.stringify({ message: "Id is required" }) };
     }
@@ -10,6 +11,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const item = await getItem.execute(id);
         return { statusCode: 200, body: JSON.stringify(item) };
     } catch (error) {
-        return { statusCode: 500, body: JSON.stringify({ message: "Internal server error" }) };
+        return { statusCode: 500, body: JSON.stringify({ message: error instanceof Error ? error.message : "Internal server error" }) };
     }
 };

@@ -19,9 +19,8 @@ export class SvsdevexpStack extends cdk.Stack {
       extensionLayerVersion: 84,
       site: "datadoghq.com",
       apiKeySecretArn: "arn:aws:secretsmanager:us-east-1:770341584863:secret:rb/lambda/monitoring/key-CfqEO5",
-      service: "svsdevexp",
-      env: "prod",
-      version: "1.0.0"
+      enableColdStartTracing: true,
+      captureLambdaPayload: true
   });
 
     const table = new dynamodb.Table(this, 'ItemsTable', {
@@ -34,7 +33,13 @@ export class SvsdevexpStack extends cdk.Stack {
       architecture: lambda.Architecture.ARM_64,
       memorySize: 256,
       timeout: Duration.seconds(10),
-      environment: { TABLE_NAME: table.tableName },
+      environment: { 
+        TABLE_NAME: table.tableName,
+        DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true",
+        DD_SERVICE: "svsdevexp",
+        DD_ENV: "prod",
+        DD_VERSION: "0.1.0",
+       },
     };
 
     const getItemLambda = new NodejsFunction(this, 'GetItemLambda', {

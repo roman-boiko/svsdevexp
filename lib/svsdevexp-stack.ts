@@ -25,6 +25,7 @@ export class SvsdevexpStack extends cdk.Stack {
 
     const table = new dynamodb.Table(this, 'ItemsTable', {
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
     });
 
     const commonFnProps = {

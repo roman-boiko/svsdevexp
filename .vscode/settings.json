@@ -1,6 +1,6 @@
 {
-    "datadog.ust.environment.setup.focusedName": "prod",
     "datadog.ust.service.setup.linkedNames": [
         "svsdevexp"
-    ]
+    ],
+    "datadog.ust.environment.setup.focusedName": "prod"
 }

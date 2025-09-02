@@ -3,7 +3,7 @@ import { updateItem } from "../../../context";
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const id = event.pathParameters?.id;
-    console.log(id);
+    console.log(`Updating item with id: ${id}`);
     if (!id) {
         return { statusCode: 400, body: JSON.stringify({ message: "Id is required" }) };
     }

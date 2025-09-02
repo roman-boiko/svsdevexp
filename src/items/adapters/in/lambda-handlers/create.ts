@@ -3,7 +3,7 @@ import { createItem } from "../../../context";
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const item = JSON.parse(event.body ?? "{}");
-    console.log(item);
+    console.log(`Creating item: ${item}`);
     try {
         await createItem.execute(item);
         return { statusCode: 201, body: JSON.stringify(item) };

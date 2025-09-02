@@ -14,6 +14,7 @@ export class SvsdevexpStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // Observability: Datadog layers and configuration applied to all Lambdas below
     const datadogLambda = new DatadogLambda(this, "DatadogLambda", {
       nodeLayerVersion: 127,
       extensionLayerVersion: 84,
@@ -23,11 +24,13 @@ export class SvsdevexpStack extends cdk.Stack {
       captureLambdaPayload: true
   });
 
+    // Persistence: single DynamoDB table to store items by primary key `id`
     const table = new dynamodb.Table(this, 'ItemsTable', {
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
     });
 
+    // Shared Lambda configuration (runtime, memory, env) used by all item handlers
     const commonFnProps = {
       handler: 'handler',
       runtime: lambda.Runtime.NODEJS_22_X,
@@ -43,6 +46,7 @@ export class SvsdevexpStack extends cdk.Stack {
        },
     };
 
+    // Inbound: Lambda functions implementing CRUD handlers for the Items API
     const getItemLambda = new NodejsFunction(this, 'GetItemLambda', {
       entry: path.join(__dirname, '../src/items/adapters/in/lambda-handlers/get.ts'),
       ...commonFnProps,
@@ -68,6 +72,7 @@ export class SvsdevexpStack extends cdk.Stack {
       ...commonFnProps,
     });
 
+    // Allow Lambdas to read Datadog API key secret (Datadog extension fetches it)
     const secretsManagerPolicyStatement = new iam.PolicyStatement({
       actions: ['secretsmanager:GetSecretValue'],
       resources: ['*'],
@@ -79,28 +84,48 @@ export class SvsdevexpStack extends cdk.Stack {
     listItemsLambda.addToRolePolicy(secretsManagerPolicyStatement);
     updateItemLambda.addToRolePolicy(secretsManagerPolicyStatement);
 
+    // Explicitly deny direct CloudWatch Logs API calls from these roles
+    // (logging should be handled by the Datadog integration)
+    const cloudwatchLogsPolicyStatement = new iam.PolicyStatement({
+      effect: iam.Effect.DENY,
+      actions: ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:PutLogEvents'],
+      resources: ['*'],
+    });
+
+    getItemLambda.addToRolePolicy(cloudwatchLogsPolicyStatement);
+    createItemLambda.addToRolePolicy(cloudwatchLogsPolicyStatement);
+    deleteItemLambda.addToRolePolicy(cloudwatchLogsPolicyStatement);
+    listItemsLambda.addToRolePolicy(cloudwatchLogsPolicyStatement);
+    updateItemLambda.addToRolePolicy(cloudwatchLogsPolicyStatement);
+
+    // Data access: grant least-privilege (read/write) to the items table for all handlers
     table.grantReadWriteData(getItemLambda);
     table.grantReadWriteData(createItemLambda);
     table.grantReadWriteData(deleteItemLambda);
     table.grantReadWriteData(listItemsLambda);
     table.grantReadWriteData(updateItemLambda);
 
+    // Attach Datadog wrapper to all item Lambdas
     datadogLambda.addLambdaFunctions([getItemLambda, createItemLambda, deleteItemLambda, listItemsLambda, updateItemLambda]);
 
+    // API Gateway: REST API exposing /items and /items/{id}
     const api = new apigw.RestApi(this, 'ItemsApi', {
       restApiName: 'ItemsApi',
     });
 
     const itemsResource = api.root.addResource('items');
     const itemResource = itemsResource.addResource('{id}');
+    // /items/{id}
     itemResource.addMethod('GET', new apigw.LambdaIntegration(getItemLambda));
     itemResource.addMethod('DELETE', new apigw.LambdaIntegration(deleteItemLambda));
     itemResource.addMethod('PUT', new apigw.LambdaIntegration(updateItemLambda));
 
+    // /items
     itemsResource.addMethod('POST', new apigw.LambdaIntegration(createItemLambda));
     itemsResource.addMethod('GET', new apigw.LambdaIntegration(listItemsLambda));
 
 
+    // Stack output: base URL of the deployed API
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: api.url,
     });

@@ -42,7 +42,7 @@ export class SvsdevexpStack extends cdk.Stack {
         DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true",
         DD_SERVICE: "svsdevexp",
         DD_ENV: "prod",
-        DD_VERSION: "0.1.0",
+        DD_VERSION: "0.1.1",
        },
     };
 

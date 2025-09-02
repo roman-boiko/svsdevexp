@@ -2,10 +2,10 @@ config:
   target: "{{ $env.API_URL }}"
   phases:
     - name: loadtest
-      duration: 60
-      arrivalCount: 1000
-      arrivalRate: 100
-      rampTo: 100
+      duration: 3600
+      arrivalCount: 100
+      arrivalRate: 10
+      rampTo: 10
       rampUp: 10
   defaults:
     headers:
